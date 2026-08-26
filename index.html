@@ -1,10 +1,64 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Adore Apartments — Stay in Tirana</title><link rel="stylesheet" href="styles.css"></head><body>
-<header><div class="container nav"><a class="brand" href="index.html">Adore Apartments</a><nav><a href="#stays">Stays</a><a href="#why">Why Adore</a><a href="#contact">Contact</a></nav><a class="admin" href="admin.html">Admin</a></div></header>
-<main><section class="hero"><div class="container hero-inner"><span class="eyebrow">TIRANA · ALBANIA</span><h1>Stay beautifully.<br>Book directly.</h1><p>Modern apartments, central locations, clear pricing and a simple direct booking experience.</p>
-<form id="searchForm" class="search"><label>Check-in<input id="checkin" type="date"></label><label>Check-out<input id="checkout" type="date"></label><label>Guests<select id="guests"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label><button>Search stays</button></form></div></section>
-<section id="stays" class="section"><div class="container"><div class="heading"><div><span class="eyebrow dark">OUR APARTMENTS</span><h2>Find your stay</h2></div><p>Hand-picked apartments in Tirana with direct booking and transparent pricing.</p></div><div id="meta" class="meta"></div><div id="grid" class="grid"></div></div></section>
-<section id="why" class="section soft"><div class="container"><span class="eyebrow dark">WHY BOOK DIRECT</span><h2>Simple, clear, personal.</h2><div class="features"><article><b>Best direct value</b><p>Book directly with Adore Apartments.</p></article><article><b>Local support</b><p>Communicate directly with the team managing your stay.</p></article><article><b>Secure checkout</b><p>Stripe payments will be added next.</p></article></div></div></section>
-<section id="contact" class="section"><div class="container contact"><div><span class="eyebrow dark">NEED HELP?</span><h2>Talk to Adore Apartments</h2><p>Questions about dates, check-in or a longer stay? Contact us directly.</p></div><a class="button" href="mailto:hello@adoreapartments.com">Email us</a></div></section></main>
-<footer><div class="container footer"><div><b>Adore Apartments</b><span>Tirana, Albania</span></div><span>© <span id="year"></span></span></div></footer>
-<div id="modal" class="modal"><div class="modal-card"><button class="close" onclick="closeModal()">×</button><div id="modalBody"></div></div></div>
-<script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Adore Apartments — Stay in Tirana</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a class="brand" href="index.html" data-business-name>Adore Apartments</a>
+      <nav><a href="#stays">Stays</a><a href="#why">Why Adore</a><a href="#contact">Contact</a></nav>
+    </div>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="container hero-inner">
+        <span class="eyebrow">TIRANA · ALBANIA</span>
+        <h1>Stay beautifully.<br>Book directly.</h1>
+        <p>Modern apartments, central locations, clear pricing and a simple direct booking experience.</p>
+        <form id="searchForm" class="search">
+          <label>Check-in<input id="checkin" type="date" required></label>
+          <label>Check-out<input id="checkout" type="date" required></label>
+          <label>Guests<select id="guests"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+          <button type="submit">Search stays</button>
+        </form>
+      </div>
+    </section>
+    <section id="stays" class="section">
+      <div class="container">
+        <div class="heading">
+          <div><span class="eyebrow dark">OUR APARTMENTS</span><h2>Find your stay</h2></div>
+          <p>Hand-picked apartments in Tirana with direct booking and transparent pricing.</p>
+        </div>
+        <div id="meta" class="meta">Loading properties…</div>
+        <div id="grid" class="grid"></div>
+      </div>
+    </section>
+    <section id="why" class="section soft">
+      <div class="container">
+        <span class="eyebrow dark">WHY BOOK DIRECT</span>
+        <h2>Simple, clear, personal.</h2>
+        <div class="features">
+          <article><b>Best direct value</b><p>Book directly with Adore Apartments.</p></article>
+          <article><b>Local support</b><p>Communicate directly with the team managing your stay.</p></article>
+          <article><b>Live availability</b><p>Dates are checked against the property calendar before booking.</p></article>
+        </div>
+      </div>
+    </section>
+    <section id="contact" class="section">
+      <div class="container contact">
+        <div><span class="eyebrow dark">NEED HELP?</span><h2>Talk to <span data-business-name>Adore Apartments</span></h2><p>Questions about dates, check-in or a longer stay? Contact us directly.</p></div>
+        <div class="contact-actions"><a id="phoneLink" class="secondary hidden" href="#">Call us</a><a id="emailLink" class="button" href="mailto:apartmentsadore@gmail.com">Email us</a></div>
+      </div>
+    </section>
+  </main>
+  <footer><div class="container footer"><div><b data-business-name>Adore Apartments</b><span>Tirana, Albania</span></div><span>© <span id="year"></span></span></div></footer>
+  <div id="modal" class="modal" aria-hidden="true"><div class="modal-card"><button class="close" type="button" onclick="closeModal()" aria-label="Close">×</button><div id="modalBody"></div></div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.56.1/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

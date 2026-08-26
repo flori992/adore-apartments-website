@@ -1,14 +1,120 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Adore Apartments — Website Admin</title><link rel="stylesheet" href="styles.css"></head><body class="admin-body">
-<header><div class="container nav"><a class="brand" href="index.html">Adore Apartments</a><span class="muted">Website Admin</span><a class="admin" href="index.html">View website</a></div></header>
-<main class="admin-main"><div class="container"><div class="admin-hero"><div><span class="eyebrow dark">CONTENT MANAGER</span><h1>Properties</h1><p>Add pictures, names, locations, prices and property details.</p></div><button class="button" onclick="openEditor()">+ Add Property</button></div>
-<div class="admin-layout"><section class="panel"><div class="panel-head"><h2>Published properties</h2><span id="count"></span></div><div id="list"></div></section><aside class="panel"><h2>Website settings</h2><label class="field">Business name<input id="businessName"></label><label class="field">Contact email<input id="contactEmail" type="email"></label><label class="field">Phone<input id="contactPhone"></label><label class="field">Currency<select id="currency"><option>EUR</option><option>GBP</option><option>USD</option></select></label><button class="button full" onclick="saveSettings()">Save settings</button><p class="hint">This first version saves content in this browser. Next we can connect it to your existing Supabase account so changes sync across devices.</p></aside></div></div></main>
-<div id="editModal" class="modal"><div class="modal-card editor"><button class="close" onclick="closeEditor()">×</button><span class="eyebrow dark">PROPERTY EDITOR</span><h2 id="formTitle">Add Property</h2><form id="form"><input id="id" type="hidden">
-<div class="cols"><label class="field">Property name<input id="name" required placeholder="Skyline 01"></label><label class="field">Location<input id="location" required placeholder="Blloku, Tirana"></label></div>
-<div class="cols"><label class="field">Price per night<input id="price" type="number" required min="0"></label><label class="field">Maximum guests<input id="maxGuests" type="number" required min="1" value="2"></label></div>
-<div class="cols"><label class="field">Bedrooms<input id="bedrooms" type="number" min="0" value="1"></label><label class="field">Bathrooms<input id="bathrooms" type="number" min="1" value="1"></label></div>
-<label class="field">Description<textarea id="description" rows="4"></textarea></label>
-<label class="field">Upload pictures<input id="images" type="file" accept="image/*" multiple></label><div id="previews" class="previews"></div>
-<label class="field">Or add image URL<div class="inline"><input id="imageUrl" placeholder="https://..."><button class="secondary" type="button" onclick="addUrl()">Add</button></div></label>
-<label class="check"><input id="published" type="checkbox" checked> Published on website</label>
-<div class="actions"><button class="secondary" type="button" onclick="closeEditor()">Cancel</button><button class="button" type="submit">Save Property</button></div></form></div></div>
-<script src="admin.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Adore Apartments — Website Admin</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="admin-body">
+  <div id="authLoading" class="auth-screen"><div class="auth-card"><div class="spinner"></div><p>Checking access…</p></div></div>
+  <main id="loginView" class="auth-screen hidden">
+    <form id="loginForm" class="auth-card">
+      <span class="eyebrow dark">PRIVATE ADMIN</span>
+      <h1>Welcome back</h1>
+      <p class="muted">Sign in with an authorized Adore Apartments account.</p>
+      <label class="field">Email<input id="loginEmail" type="email" autocomplete="email" required></label>
+      <label class="field">Password<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+      <button id="loginButton" class="button full" type="submit">Sign in</button>
+      <p id="loginError" class="form-error hidden"></p>
+      <a class="back-link" href="index.html">← Back to website</a>
+    </form>
+  </main>
+
+  <div id="adminView" class="hidden">
+    <header>
+      <div class="container nav">
+        <a class="brand" href="index.html">Adore Apartments</a>
+        <span class="muted">Website Admin</span>
+        <div class="nav-spacer"></div>
+        <a class="admin" href="index.html">View website</a>
+        <button class="admin admin-button" type="button" onclick="signOut()">Sign out</button>
+      </div>
+    </header>
+    <main class="admin-main">
+      <div class="container">
+        <div class="admin-hero">
+          <div><span class="eyebrow dark">CONTENT MANAGER</span><h1>Website control panel</h1><p>Manage listings, images, prices, availability and access.</p></div>
+          <button class="button" type="button" onclick="openEditor()">+ Add property</button>
+        </div>
+        <nav class="admin-tabs" aria-label="Admin sections">
+          <button class="tab active" data-tab="properties" type="button">Properties</button>
+          <button class="tab" data-tab="availability" type="button">Availability & prices</button>
+          <button class="tab" data-tab="settings" type="button">Settings</button>
+          <button id="accessTabButton" class="tab hidden" data-tab="access" type="button">Authorized users</button>
+        </nav>
+
+        <section id="tab-properties" class="tab-panel active">
+          <div class="panel">
+            <div class="panel-head"><div><h2>Website properties</h2><p class="small">Only published properties appear publicly.</p></div><span id="count" class="status-pill"></span></div>
+            <div id="list" class="admin-list"></div>
+          </div>
+        </section>
+
+        <section id="tab-availability" class="tab-panel">
+          <div class="admin-layout">
+            <form id="ruleForm" class="panel">
+              <h2>Add availability or price rule</h2>
+              <p class="small">StayFlow reservations close dates automatically. Use this for manual closures or date-specific prices.</p>
+              <label class="field">Property<select id="ruleProperty" required></select></label>
+              <div class="cols"><label class="field">From<input id="ruleStart" type="date" required></label><label class="field">Until<input id="ruleEnd" type="date" required></label></div>
+              <label class="field">Availability<select id="ruleAvailable"><option value="false">Unavailable — close these dates</option><option value="true">Available — price override only</option></select></label>
+              <label class="field">Price per night (optional)<input id="rulePrice" type="number" min="0" step="0.01" placeholder="Leave blank to use standard price"></label>
+              <label class="field">Internal note<input id="ruleNote" placeholder="Example: New Year rate"></label>
+              <button class="button full" type="submit">Save rule</button>
+            </form>
+            <section class="panel">
+              <div class="panel-head"><h2>Manual rules</h2><span id="ruleCount" class="status-pill"></span></div>
+              <div id="ruleList"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-settings" class="tab-panel">
+          <form id="settingsForm" class="panel settings-panel">
+            <h2>Website settings</h2>
+            <div class="cols"><label class="field">Business name<input id="businessName" required></label><label class="field">Currency<select id="currency"><option>EUR</option><option>GBP</option><option>USD</option></select></label></div>
+            <div class="cols"><label class="field">Contact email<input id="contactEmail" type="email" required></label><label class="field">Phone<input id="contactPhone"></label></div>
+            <button class="button" type="submit">Save settings</button>
+          </form>
+        </section>
+
+        <section id="tab-access" class="tab-panel">
+          <div class="panel settings-panel">
+            <h2>Authorized users</h2>
+            <p class="small">Only active users listed here can enter this website panel. Accounts must already exist in your Adore system.</p>
+            <div id="accessList"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="editModal" class="modal" aria-hidden="true">
+    <div class="modal-card editor">
+      <button class="close" type="button" onclick="closeEditor()" aria-label="Close">×</button>
+      <span class="eyebrow dark">PROPERTY EDITOR</span>
+      <h2 id="formTitle">Add property</h2>
+      <form id="propertyForm">
+        <input id="propertyId" type="hidden">
+        <div class="cols"><label class="field">Property name<input id="propertyName" required placeholder="Skyline 01"></label><label class="field">URL name<input id="propertySlug" required placeholder="skyline-01"></label></div>
+        <label class="field">Connect to StayFlow property<select id="stayflowProperty" required></select><span class="field-help">This connection supplies booked and blocked dates without exposing guest information.</span></label>
+        <div class="cols"><label class="field">Location<input id="propertyLocation" required placeholder="Blloku, Tirana"></label><label class="field">Full address<input id="propertyAddress" placeholder="Street and building"></label></div>
+        <div class="cols"><label class="field">Standard price per night<input id="propertyPrice" type="number" required min="0" step="0.01"></label><label class="field">Currency<select id="propertyCurrency"><option>EUR</option><option>GBP</option><option>USD</option></select></label></div>
+        <div class="three-cols"><label class="field">Maximum guests<input id="propertyGuests" type="number" required min="1" value="2"></label><label class="field">Bedrooms<input id="propertyBedrooms" type="number" min="0" value="1"></label><label class="field">Bathrooms<input id="propertyBathrooms" type="number" min="0.5" step="0.5" value="1"></label></div>
+        <label class="field">Description<textarea id="propertyDescription" rows="5"></textarea></label>
+        <label class="field">Amenities<input id="propertyAmenities" placeholder="Wi-Fi, air conditioning, kitchen"></label>
+        <label class="field">Upload pictures<input id="propertyImages" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple><span class="field-help">JPG, PNG, WebP or AVIF. Maximum 8 MB each.</span></label>
+        <div id="previews" class="previews"></div>
+        <label class="field">Or add image URL<div class="inline"><input id="imageUrl" placeholder="https://..."><button class="secondary" type="button" onclick="addImageUrl()">Add</button></div></label>
+        <label class="check"><input id="propertyPublished" type="checkbox"> Published on website</label>
+        <div class="actions"><button class="secondary" type="button" onclick="closeEditor()">Cancel</button><button id="savePropertyButton" class="button" type="submit">Save property</button></div>
+      </form>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.56.1/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

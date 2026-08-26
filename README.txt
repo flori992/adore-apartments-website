@@ -1,22 +1,23 @@
-ADORE APARTMENTS DIRECT BOOKING WEBSITE — V1
+ADORE APARTMENTS DIRECT BOOKING WEBSITE
 
-Public site: index.html
-Website content panel: admin.html
+Public website:
+https://flori992.github.io/adore-apartments-website/
 
-Included now:
-- Responsive public property website
-- Search dates/guests UI
-- Property cards and detail view
-- Admin panel for property name, location, nightly price, guest capacity, bedrooms, bathrooms, description and pictures
-- Publish/hide and delete properties
-- Website settings
+Private website panel:
+https://flori992.github.io/adore-apartments-website/admin.html
 
-This prototype stores website content in the current browser.
+The website is connected to Supabase for:
+- Authorized email/password access
+- Public property content
+- Multiple property images in Storage
+- Locations, descriptions, amenities and standard prices
+- Manual date closures and date-specific prices
+- Website settings and authorized-user management
 
-Next:
-1. Connect admin/property content to your existing Supabase database.
-2. Store photos in Supabase Storage.
-3. Build one availability engine combining Adore reservations, Booking.com closed dates, direct reservations, and manual blocks.
-4. Add temporary checkout holds.
-5. Add Stripe Checkout and webhook.
-6. Send confirmed website bookings into your existing Adore management app.
+Availability connection:
+- Each website listing is mapped to one StayFlow property.
+- StayFlow reservations automatically create sanitized busy periods for the website.
+- Booking.com/imported calendar events automatically create the same sanitized busy periods.
+- The public website receives only property IDs and blocked date ranges. It cannot read guest names, phone numbers, notes, expenses or other private management information.
+
+The public website does not show an Admin link. Authorized users open admin.html directly and sign in.
