@@ -21,3 +21,16 @@ Availability connection:
 - The public website receives only property IDs and blocked date ranges. It cannot read guest names, phone numbers, notes, expenses or other private management information.
 
 The public website does not show an Admin link. Authorized users open admin.html directly and sign in.
+
+Direct booking flow:
+- Guests choose dates, enter their full name, email, phone, guest count and an optional message.
+- Cash bookings are confirmed immediately and added to the StayFlow reservations calendar as unpaid Direct bookings.
+- Card bookings hold the dates for 30 minutes and open Stripe Checkout for the exact database-calculated amount.
+- A verified Stripe webhook creates the paid Direct reservation; the browser success page is not trusted for confirmation.
+
+Stripe setup (secrets must never be committed to this repository):
+1. In Supabase Edge Function secrets, add STRIPE_SECRET_KEY from the Stripe account.
+2. In Stripe Workbench, add a webhook endpoint for:
+   https://mrukzyqaztgkdgbqshzk.supabase.co/functions/v1/stripe-webhook
+3. Subscribe it to checkout.session.completed and checkout.session.expired.
+4. Add the endpoint signing secret to Supabase as STRIPE_WEBHOOK_SECRET.

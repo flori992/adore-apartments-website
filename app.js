@@ -22,6 +22,10 @@
     date.setDate(date.getDate() + days);
     return dateOnly(date);
   }
+  function dateLabel(iso) {
+    return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso + "T12:00:00"));
+  }
+  function bookingEndpoint() { return config.supabaseUrl + "/functions/v1/website-booking"; }
 
   function isAvailable(property, start, end) {
     if (!start || !end || end <= start) return true;
@@ -90,10 +94,20 @@
     byId("modalBody").innerHTML = gallery + '<div class="detail"><div class="card-top"><div><h2>' + esc(property.name) + '</h2><div class="small">' + esc(property.location) + '</div></div><div class="price">' + money(property.base_price, property.currency) + ' / night</div></div>' +
       '<div class="facts"><span>' + esc(property.max_guests) + ' guests</span><span>' + esc(property.bedrooms) + ' bedrooms</span><span>' + esc(property.bathrooms) + ' bath</span></div>' +
       '<p class="property-description">' + esc(property.description) + '</p><div class="amenities">' + amenities + '</div>' +
-      '<div class="booking"><b>Check availability</b><div class="cols booking-dates"><label class="field">Check-in<input id="modalCheckin" type="date" value="' + esc(byId("checkin").value) + '"></label><label class="field">Check-out<input id="modalCheckout" type="date" value="' + esc(byId("checkout").value) + '"></label></div>' +
-      quoteHtml + '<button class="button full" type="button" onclick="continueBooking()">Continue to booking</button><p class="hint">The dates shown are checked against the Adore property calendar.</p></div></div>';
+      '<div class="booking"><b>Check availability</b><div class="cols booking-dates"><label class="field">Check-in<input id="modalCheckin" type="date" min="' + dateOnly(new Date()) + '" value="' + esc(byId("checkin").value) + '"></label><label class="field">Check-out<input id="modalCheckout" type="date" min="' + dateOnly(new Date()) + '" value="' + esc(byId("checkout").value) + '"></label></div>' +
+      '<div id="modalQuote">' + quoteHtml + '</div><button class="button full" type="button" onclick="continueBooking()">Continue to booking</button><p class="hint">The dates shown are checked against the Adore property calendar.</p></div></div>';
     byId("modal").classList.add("show");
     byId("modal").setAttribute("aria-hidden", "false");
+    ["modalCheckin", "modalCheckout"].forEach(function (inputId) {
+      byId(inputId).addEventListener("change", function () {
+        var start = byId("modalCheckin").value;
+        var end = byId("modalCheckout").value;
+        var updatedQuote = quote(property, start, end);
+        byId("modalQuote").innerHTML = updatedQuote && isAvailable(property, start, end)
+          ? '<div class="quote"><b>' + money(updatedQuote.total, property.currency) + ' total</b><span>' + updatedQuote.nights + ' nights</span></div>'
+          : '<p class="form-error">Choose available check-in and check-out dates.</p>';
+      });
+    });
   };
 
   window.closeModal = function () {
@@ -110,8 +124,106 @@
     byId("checkin").value = start;
     byId("checkout").value = end;
     var currentQuote = quote(property, start, end);
-    window.alert("Available: " + currentQuote.nights + " nights, " + money(currentQuote.total, property.currency) + " total. The booking form and payment step can be connected next.");
+    var selectedGuests = Math.min(Number(byId("guests").value || 1), Number(property.max_guests));
+    var guestOptions = "";
+    for (var guest = 1; guest <= Number(property.max_guests); guest += 1) {
+      guestOptions += '<option value="' + guest + '"' + (guest === selectedGuests ? " selected" : "") + '>' + guest + (guest === 1 ? " guest" : " guests") + '</option>';
+    }
+    var bookingBox = byId("modalBody").querySelector(".booking");
+    bookingBox.innerHTML = '<div class="booking-step"><span class="eyebrow dark">YOUR BOOKING</span><h3>Complete your details</h3>' +
+      '<div class="booking-summary"><div><b>' + esc(property.name) + '</b><span>' + dateLabel(start) + ' — ' + dateLabel(end) + '</span></div><div><b>' + money(currentQuote.total, property.currency) + '</b><span>' + currentQuote.nights + ' nights</span></div></div>' +
+      '<form id="bookingForm" class="booking-form">' +
+      '<div class="cols"><label class="field">Full name<input id="bookingName" name="fullName" autocomplete="name" maxlength="120" required placeholder="Your full name"></label><label class="field">Email<input id="bookingEmail" name="email" type="email" autocomplete="email" maxlength="200" required placeholder="you@example.com"></label></div>' +
+      '<div class="cols"><label class="field">Phone number<input id="bookingPhone" name="phone" type="tel" autocomplete="tel" maxlength="40" required placeholder="Include country code"></label><label class="field">Guests<select id="bookingGuests" name="guests" required>' + guestOptions + '</select></label></div>' +
+      '<label class="field">Message or arrival time (optional)<textarea id="bookingMessage" name="message" rows="3" maxlength="500" placeholder="Anything we should know about your stay?"></textarea></label>' +
+      '<fieldset class="payment-choice"><legend>Payment method</legend>' +
+      '<label class="payment-option"><input type="radio" name="paymentMethod" value="cash" checked><span><b>Cash on arrival</b><small>Your booking is confirmed now. Pay when you arrive.</small></span></label>' +
+      '<label class="payment-option"><input type="radio" name="paymentMethod" value="card"><span><b>Pay securely by card</b><small>Continue to Stripe and pay the exact total.</small></span></label></fieldset>' +
+      '<label class="honeypot" aria-hidden="true">Company<input id="bookingCompany" name="company" tabindex="-1" autocomplete="off"></label>' +
+      '<label class="booking-consent"><input id="bookingConsent" type="checkbox" required> <span>I confirm that the dates and guest details are correct.</span></label>' +
+      '<p id="bookingError" class="form-error hidden"></p>' +
+      '<div class="actions booking-actions"><button class="secondary" type="button" onclick="openProperty(\'' + esc(property.id) + '\')">Back</button><button id="bookingSubmit" class="button" type="submit">Confirm cash booking</button></div>' +
+      '<p class="secure-note">Card details are entered only on Stripe. Adore Apartments never sees or stores your card number.</p></form></div>';
+    byId("bookingForm").addEventListener("submit", submitBooking);
+    document.querySelectorAll('input[name="paymentMethod"]').forEach(function (input) {
+      input.addEventListener("change", function () {
+        byId("bookingSubmit").textContent = input.value === "card" ? "Continue to Stripe · " + money(currentQuote.total, property.currency) : "Confirm cash booking";
+      });
+    });
+    bookingBox.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  async function submitBooking(event) {
+    event.preventDefault();
+    var property = state.properties.find(function (item) { return item.id === state.selectedId; });
+    if (!property) return;
+    var button = byId("bookingSubmit");
+    var errorBox = byId("bookingError");
+    var method = document.querySelector('input[name="paymentMethod"]:checked').value;
+    button.disabled = true;
+    button.textContent = method === "card" ? "Opening secure payment…" : "Confirming booking…";
+    errorBox.classList.add("hidden");
+    try {
+      var response = await fetch(bookingEndpoint(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyId: property.id,
+          checkIn: byId("checkin").value,
+          checkOut: byId("checkout").value,
+          guests: Number(byId("bookingGuests").value),
+          fullName: byId("bookingName").value.trim(),
+          email: byId("bookingEmail").value.trim(),
+          phone: byId("bookingPhone").value.trim(),
+          message: byId("bookingMessage").value.trim(),
+          paymentMethod: method,
+          company: byId("bookingCompany").value
+        })
+      });
+      var result = await response.json().catch(function () { return {}; });
+      if (!response.ok) throw new Error(result.error || "Booking could not be submitted.");
+      if (result.type === "card" && result.checkoutUrl) {
+        window.location.assign(result.checkoutUrl);
+        return;
+      }
+      byId("modalBody").innerHTML = '<div class="booking-success"><div class="success-mark">✓</div><span class="eyebrow dark">BOOKING CONFIRMED</span><h2>We look forward to hosting you.</h2><p>Your booking reference is <b>' + esc(result.booking_reference) + '</b>.</p><div class="booking-summary"><div><b>' + esc(result.property_name) + '</b><span>' + dateLabel(result.check_in) + ' — ' + dateLabel(result.check_out) + '</span></div><div><b>' + money(Number(result.amount_minor) / 100, result.currency) + '</b><span>Pay cash on arrival</span></div></div><button class="button full" type="button" onclick="closeModal()">Done</button></div>';
+      await load();
+    } catch (error) {
+      errorBox.textContent = error.message || "Booking could not be submitted.";
+      errorBox.classList.remove("hidden");
+      button.disabled = false;
+      button.textContent = method === "card" ? "Continue to Stripe" : "Confirm cash booking";
+    }
+  }
+
+  async function handleBookingReturn() {
+    var params = new URLSearchParams(window.location.search);
+    var result = params.get("booking");
+    if (!result) return;
+    var notice = byId("bookingNotice");
+    notice.classList.remove("hidden");
+    if (result === "cancelled") {
+      notice.className = "booking-notice cancelled";
+      notice.innerHTML = '<div><b>Card payment was cancelled.</b><span>No payment was taken. You can choose the dates again whenever you are ready.</span></div><button type="button" onclick="this.parentElement.remove()">×</button>';
+      return;
+    }
+    notice.className = "booking-notice success";
+    notice.innerHTML = '<div><b>Payment received.</b><span id="paymentStatusText">We are confirming your booking…</span></div>';
+    var sessionId = params.get("session_id");
+    if (!sessionId) return;
+    for (var attempt = 0; attempt < 6; attempt += 1) {
+      try {
+        var response = await fetch(bookingEndpoint() + "?session_id=" + encodeURIComponent(sessionId));
+        var status = await response.json();
+        if (status.status === "confirmed") {
+          byId("paymentStatusText").innerHTML = 'Booking confirmed for ' + esc(status.property_name) + '. Your reference is <b>' + esc(status.booking_reference) + '</b>.';
+          return;
+        }
+      } catch (error) { console.error(error); }
+      await new Promise(function (resolve) { window.setTimeout(resolve, 1200); });
+    }
+    byId("paymentStatusText").textContent = "Your payment is complete and confirmation is processing. We will contact you if needed.";
+  }
 
   function applySettings() {
     document.querySelectorAll("[data-business-name]").forEach(function (element) { element.textContent = state.settings.business_name; });
@@ -158,5 +270,8 @@
   end.setDate(today.getDate() + 3);
   byId("checkin").value = dateOnly(start);
   byId("checkout").value = dateOnly(end);
+  byId("checkin").min = dateOnly(today);
+  byId("checkout").min = dateOnly(today);
+  handleBookingReturn();
   load();
 })();
