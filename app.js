@@ -4,6 +4,7 @@
   var config = window.ADORE_CONFIG;
   var db = window.supabase.createClient(config.supabaseUrl, config.supabaseKey);
   var state = { properties: [], rules: [], busy: [], settings: { business_name: "Adore Apartments", contact_email: "apartmentsadore@gmail.com", contact_phone: "", currency: "EUR" }, selectedId: null };
+  var PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221200%22 height=%22800%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%23e9e9e3%22/%3E%3C/svg%3E";
 
   function byId(id) { return document.getElementById(id); }
   function esc(value) {
@@ -26,6 +27,10 @@
     return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso + "T12:00:00"));
   }
   function bookingEndpoint() { return config.supabaseUrl + "/functions/v1/website-booking"; }
+
+  function imageMarkup(src, alt) {
+    return '<img src="' + esc(src || PLACEHOLDER_IMAGE) + '" alt="' + esc(alt || "") + '" onerror="this.onerror=null;this.src=\'' + PLACEHOLDER_IMAGE + '\'">';
+  }
 
   function googleMapsUrl(value) {
     if (!value) return "";
@@ -72,10 +77,10 @@
   }
 
   function propertyCard(property) {
-    var image = property.images && property.images[0] ? property.images[0] : "";
+    var image = property.images && property.images[0] ? property.images[0] : PLACEHOLDER_IMAGE;
     var bedroomLabel = Number(property.bedrooms) === 1 ? "bedroom" : "bedrooms";
     return '<article class="card">' +
-      '<img src="' + esc(image) + '" alt="' + esc(property.name) + '">' +
+      imageMarkup(image, property.name) +
       '<div class="card-body"><div class="card-top"><div><h3>' + esc(property.name) + '</h3><div class="small">' + esc(property.location) + '</div></div>' +
       '<div class="price">' + money(property.base_price, property.currency) + ' / night</div></div>' +
       '<div class="facts"><span>' + esc(property.max_guests) + ' guests</span><span>' + esc(property.bedrooms) + ' ' + bedroomLabel + '</span><span>' + esc(property.bathrooms) + ' bath</span></div>' +
@@ -99,8 +104,15 @@
     if (!property) return;
     state.selectedId = id;
     var images = property.images || [];
-    var gallery = '<div class="gallery"><img src="' + esc(images[0] || "") + '" alt="' + esc(property.name) + '"><div class="gallery-side">' +
-      images.slice(1, 3).map(function (image) { return '<img src="' + esc(image) + '" alt="">'; }).join("") + "</div></div>";
+    var gallery;
+    if (!images.length) {
+      gallery = '<div class="gallery gallery-empty"><div><b>Photos coming soon</b><span>' + esc(property.name) + '</span></div></div>';
+    } else if (images.length === 1) {
+      gallery = '<div class="gallery gallery-single">' + imageMarkup(images[0], property.name) + '</div>';
+    } else {
+      gallery = '<div class="gallery">' + imageMarkup(images[0], property.name) + '<div class="gallery-side">' +
+        images.slice(1, 3).map(function (image) { return imageMarkup(image, ""); }).join("") + "</div></div>";
+    }
     var amenities = (property.amenities || []).map(function (item) { return "<span>" + esc(item) + "</span>"; }).join("");
     var currentQuote = quote(property, byId("checkin").value, byId("checkout").value);
     var quoteHtml = currentQuote ? '<div class="quote"><b>' + money(currentQuote.total, property.currency) + ' total</b><span>' + currentQuote.nights + ' nights</span></div>' : "";
