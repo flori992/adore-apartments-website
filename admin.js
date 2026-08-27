@@ -31,6 +31,19 @@
     return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value + "T12:00:00"));
   }
 
+  function validGoogleMapsUrl(value) {
+    if (!value) return "";
+    try {
+      var url = new URL(value);
+      var host = url.hostname.toLowerCase();
+      var isGoogleMaps = host === "maps.app.goo.gl" || (host === "goo.gl" && url.pathname.indexOf("/maps") === 0) ||
+        ((host === "maps.google.com" || /(^|\.)google\.[a-z.]+$/.test(host)) && url.pathname.indexOf("/maps") === 0);
+      return url.protocol === "https:" && isGoogleMaps ? url.href : "";
+    } catch (error) {
+      return "";
+    }
+  }
+
   function showLogin(message) {
     setHidden(byId("authLoading"), true);
     setHidden(byId("adminView"), true);
@@ -133,7 +146,7 @@
 
   window.openEditor = function (propertyId) {
     var property = state.properties.find(function (item) { return item.id === propertyId; }) || {
-      id: "", stayflow_property_id: "", name: "", slug: "", location: "Tirana, Albania", address: "", base_price: "", currency: "EUR",
+      id: "", stayflow_property_id: "", name: "", slug: "", location: "Tirana, Albania", address: "", map_url: "", base_price: "", currency: "EUR",
       max_guests: 2, bedrooms: 1, bathrooms: 1, description: "", amenities: [], images: [], published: false
     };
     byId("propertyId").value = property.id;
@@ -142,6 +155,7 @@
     byId("stayflowProperty").innerHTML = stayflowOptions(property.stayflow_property_id);
     byId("propertyLocation").value = property.location;
     byId("propertyAddress").value = property.address;
+    byId("propertyMapUrl").value = property.map_url || "";
     byId("propertyPrice").value = property.base_price;
     byId("propertyCurrency").value = property.currency;
     byId("propertyGuests").value = property.max_guests;
@@ -219,6 +233,9 @@
     button.textContent = "Saving…";
     try {
       var propertyId = byId("propertyId").value || window.crypto.randomUUID();
+      var enteredMapUrl = byId("propertyMapUrl").value.trim();
+      var mapUrl = validGoogleMapsUrl(enteredMapUrl);
+      if (enteredMapUrl && !mapUrl) throw new Error("Paste a valid Google Maps sharing link beginning with https://.");
       var record = {
         id: propertyId,
         stayflow_property_id: byId("stayflowProperty").value,
@@ -226,6 +243,7 @@
         slug: slugify(byId("propertySlug").value),
         location: byId("propertyLocation").value.trim(),
         address: byId("propertyAddress").value.trim(),
+        map_url: mapUrl,
         base_price: Number(byId("propertyPrice").value),
         currency: byId("propertyCurrency").value,
         max_guests: Number(byId("propertyGuests").value),

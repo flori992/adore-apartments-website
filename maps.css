@@ -1,0 +1,12 @@
+.map-link {
+  display: inline-flex;
+  margin-top: 14px;
+  color: #315f48;
+  font-weight: 800;
+  text-decoration: none;
+  border-bottom: 1px solid #8eaa9b;
+}
+
+.map-link:hover {
+  color: #1e4533;
+}

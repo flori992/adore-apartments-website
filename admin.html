@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Adore Apartments — Website Admin</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260827-2">
 </head>
 <body class="admin-body">
   <div id="authLoading" class="auth-screen"><div class="auth-card"><div class="spinner"></div><p>Checking access…</p></div></div>
@@ -100,6 +100,7 @@
         <div class="cols"><label class="field">Property name<input id="propertyName" required placeholder="Skyline 01"></label><label class="field">URL name<input id="propertySlug" required placeholder="skyline-01"></label></div>
         <label class="field">Connect to StayFlow property<select id="stayflowProperty" required></select><span class="field-help">This connection supplies booked and blocked dates without exposing guest information.</span></label>
         <div class="cols"><label class="field">Location<input id="propertyLocation" required placeholder="Blloku, Tirana"></label><label class="field">Full address<input id="propertyAddress" placeholder="Street and building"></label></div>
+        <label class="field">Google Maps link<input id="propertyMapUrl" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/..."><span class="field-help">Open the property in Google Maps, tap Share, and paste the link here.</span></label>
         <div class="cols"><label class="field">Standard price per night<input id="propertyPrice" type="number" required min="0" step="0.01"></label><label class="field">Currency<select id="propertyCurrency"><option>EUR</option><option>GBP</option><option>USD</option></select></label></div>
         <div class="three-cols"><label class="field">Maximum guests<input id="propertyGuests" type="number" required min="1" value="2"></label><label class="field">Bedrooms<input id="propertyBedrooms" type="number" min="0" value="1"></label><label class="field">Bathrooms<input id="propertyBathrooms" type="number" min="0.5" step="0.5" value="1"></label></div>
         <label class="field">Description<textarea id="propertyDescription" rows="5"></textarea></label>
@@ -115,6 +116,6 @@
   <div id="toast" class="toast" role="status"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.56.1/dist/umd/supabase.js"></script>
   <script src="config.js"></script>
-  <script src="admin.js"></script>
+  <script src="admin.js?v=20260827-2"></script>
 </body>
 </html>

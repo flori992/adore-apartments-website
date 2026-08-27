@@ -27,6 +27,19 @@
   }
   function bookingEndpoint() { return config.supabaseUrl + "/functions/v1/website-booking"; }
 
+  function googleMapsUrl(value) {
+    if (!value) return "";
+    try {
+      var url = new URL(value);
+      var host = url.hostname.toLowerCase();
+      var isGoogleMaps = host === "maps.app.goo.gl" || (host === "goo.gl" && url.pathname.indexOf("/maps") === 0) ||
+        ((host === "maps.google.com" || /(^|\.)google\.[a-z.]+$/.test(host)) && url.pathname.indexOf("/maps") === 0);
+      return url.protocol === "https:" && isGoogleMaps ? url.href : "";
+    } catch (error) {
+      return "";
+    }
+  }
+
   function isAvailable(property, start, end) {
     if (!start || !end || end <= start) return true;
     var stayflowBlocked = state.busy.some(function (period) {
@@ -91,9 +104,11 @@
     var amenities = (property.amenities || []).map(function (item) { return "<span>" + esc(item) + "</span>"; }).join("");
     var currentQuote = quote(property, byId("checkin").value, byId("checkout").value);
     var quoteHtml = currentQuote ? '<div class="quote"><b>' + money(currentQuote.total, property.currency) + ' total</b><span>' + currentQuote.nights + ' nights</span></div>' : "";
+    var mapUrl = googleMapsUrl(property.map_url);
+    var mapLink = mapUrl ? '<a class="map-link" href="' + esc(mapUrl) + '" target="_blank" rel="noopener noreferrer">View on Google Maps ↗</a>' : "";
     byId("modalBody").innerHTML = gallery + '<div class="detail"><div class="card-top"><div><h2>' + esc(property.name) + '</h2><div class="small">' + esc(property.location) + '</div></div><div class="price">' + money(property.base_price, property.currency) + ' / night</div></div>' +
       '<div class="facts"><span>' + esc(property.max_guests) + ' guests</span><span>' + esc(property.bedrooms) + ' bedrooms</span><span>' + esc(property.bathrooms) + ' bath</span></div>' +
-      '<p class="property-description">' + esc(property.description) + '</p><div class="amenities">' + amenities + '</div>' +
+      mapLink + '<p class="property-description">' + esc(property.description) + '</p><div class="amenities">' + amenities + '</div>' +
       '<div class="booking"><b>Check availability</b><div class="cols booking-dates"><label class="field">Check-in<input id="modalCheckin" type="date" min="' + dateOnly(new Date()) + '" value="' + esc(byId("checkin").value) + '"></label><label class="field">Check-out<input id="modalCheckout" type="date" min="' + dateOnly(new Date()) + '" value="' + esc(byId("checkout").value) + '"></label></div>' +
       '<div id="modalQuote">' + quoteHtml + '</div><button class="button full" type="button" onclick="continueBooking()">Continue to booking</button><p class="hint">The dates shown are checked against the Adore property calendar.</p></div></div>';
     byId("modal").classList.add("show");
@@ -129,6 +144,9 @@
     for (var guest = 1; guest <= Number(property.max_guests); guest += 1) {
       guestOptions += '<option value="' + guest + '"' + (guest === selectedGuests ? " selected" : "") + '>' + guest + (guest === 1 ? " guest" : " guests") + '</option>';
     }
+    var cardPaymentOption = state.settings.card_payments_enabled
+      ? '<label class="payment-option"><input type="radio" name="paymentMethod" value="card"><span><b>Pay securely by card</b><small>Continue to Stripe and pay the exact total.</small></span></label>'
+      : '<label class="payment-option disabled"><input type="radio" name="paymentMethod" value="card" disabled><span><b>Pay securely by card</b><small>Card payments are being connected. Cash booking is available now.</small></span></label>';
     var bookingBox = byId("modalBody").querySelector(".booking");
     bookingBox.innerHTML = '<div class="booking-step"><span class="eyebrow dark">YOUR BOOKING</span><h3>Complete your details</h3>' +
       '<div class="booking-summary"><div><b>' + esc(property.name) + '</b><span>' + dateLabel(start) + ' — ' + dateLabel(end) + '</span></div><div><b>' + money(currentQuote.total, property.currency) + '</b><span>' + currentQuote.nights + ' nights</span></div></div>' +
@@ -138,7 +156,7 @@
       '<label class="field">Message or arrival time (optional)<textarea id="bookingMessage" name="message" rows="3" maxlength="500" placeholder="Anything we should know about your stay?"></textarea></label>' +
       '<fieldset class="payment-choice"><legend>Payment method</legend>' +
       '<label class="payment-option"><input type="radio" name="paymentMethod" value="cash" checked><span><b>Cash on arrival</b><small>Your booking is confirmed now. Pay when you arrive.</small></span></label>' +
-      '<label class="payment-option"><input type="radio" name="paymentMethod" value="card"><span><b>Pay securely by card</b><small>Continue to Stripe and pay the exact total.</small></span></label></fieldset>' +
+      cardPaymentOption + '</fieldset>' +
       '<label class="honeypot" aria-hidden="true">Company<input id="bookingCompany" name="company" tabindex="-1" autocomplete="off"></label>' +
       '<label class="booking-consent"><input id="bookingConsent" type="checkbox" required> <span>I confirm that the dates and guest details are correct.</span></label>' +
       '<p id="bookingError" class="form-error hidden"></p>' +
