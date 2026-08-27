@@ -28,8 +28,8 @@
   }
   function bookingEndpoint() { return config.supabaseUrl + "/functions/v1/website-booking"; }
 
-  function imageMarkup(src, alt) {
-    return '<img src="' + esc(src || PLACEHOLDER_IMAGE) + '" alt="' + esc(alt || "") + '" onerror="this.onerror=null;this.src=\'' + PLACEHOLDER_IMAGE + '\'">';
+  function imageMarkup(src, alt, attributes) {
+    return '<img ' + (attributes || "") + ' src="' + esc(src || PLACEHOLDER_IMAGE) + '" alt="' + esc(alt || "") + '" onerror="this.onerror=null;this.src=\'' + PLACEHOLDER_IMAGE + '\'">';
   }
 
   function googleMapsUrl(value) {
@@ -104,14 +104,21 @@
     if (!property) return;
     state.selectedId = id;
     var images = property.images || [];
+    state.galleryImages = images.slice();
+    state.galleryIndex = 0;
     var gallery;
     if (!images.length) {
       gallery = '<div class="gallery gallery-empty"><div><b>Photos coming soon</b><span>' + esc(property.name) + '</span></div></div>';
-    } else if (images.length === 1) {
-      gallery = '<div class="gallery gallery-single">' + imageMarkup(images[0], property.name) + '</div>';
     } else {
-      gallery = '<div class="gallery">' + imageMarkup(images[0], property.name) + '<div class="gallery-side">' +
-        images.slice(1, 3).map(function (image) { return imageMarkup(image, ""); }).join("") + "</div></div>";
+      var arrows = images.length > 1 ? '<button class="gallery-arrow gallery-prev" type="button" onclick="moveGallery(-1)" aria-label="Previous photo">‹</button><button class="gallery-arrow gallery-next" type="button" onclick="moveGallery(1)" aria-label="Next photo">›</button>' : "";
+      var counter = images.length > 1 ? '<span id="galleryCounter" class="gallery-counter">1 / ' + images.length + '</span>' : "";
+      var side = images.length > 1 ? '<div class="gallery-side">' + images.slice(1, 3).map(function (image, index) {
+        return '<button type="button" onclick="showGalleryImage(' + (index + 1) + ')" aria-label="Open photo ' + (index + 2) + '">' + imageMarkup(image, "") + '</button>';
+      }).join("") + "</div>" : "";
+      var thumbnails = images.length > 1 ? '<div class="gallery-thumbnails" aria-label="All property photos">' + images.map(function (image, index) {
+        return '<button class="gallery-thumbnail' + (index === 0 ? " active" : "") + '" type="button" data-gallery-index="' + index + '" onclick="showGalleryImage(' + index + ')" aria-label="Open photo ' + (index + 1) + '">' + imageMarkup(image, "") + '</button>';
+      }).join("") + "</div>" : "";
+      gallery = '<div class="gallery' + (images.length === 1 ? " gallery-single" : "") + '"><div class="gallery-main">' + imageMarkup(images[0], property.name, 'id="galleryMain"') + arrows + counter + '</div>' + side + '</div>' + thumbnails;
     }
     var amenities = (property.amenities || []).map(function (item) { return "<span>" + esc(item) + "</span>"; }).join("");
     var currentQuote = quote(property, byId("checkin").value, byId("checkout").value);
@@ -135,6 +142,29 @@
           : '<p class="form-error">Choose available check-in and check-out dates.</p>';
       });
     });
+  };
+
+  window.showGalleryImage = function (index) {
+    var images = state.galleryImages || [];
+    if (!images.length) return;
+    var normalized = ((Number(index) % images.length) + images.length) % images.length;
+    state.galleryIndex = normalized;
+    var main = byId("galleryMain");
+    if (main) {
+      main.src = images[normalized];
+      main.alt = "Property photo " + (normalized + 1);
+    }
+    var counter = byId("galleryCounter");
+    if (counter) counter.textContent = (normalized + 1) + " / " + images.length;
+    document.querySelectorAll(".gallery-thumbnail").forEach(function (thumbnail) {
+      thumbnail.classList.toggle("active", Number(thumbnail.getAttribute("data-gallery-index")) === normalized);
+    });
+    var activeThumbnail = document.querySelector('.gallery-thumbnail[data-gallery-index="' + normalized + '"]');
+    if (activeThumbnail) activeThumbnail.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  };
+
+  window.moveGallery = function (direction) {
+    window.showGalleryImage(Number(state.galleryIndex || 0) + Number(direction || 0));
   };
 
   window.closeModal = function () {
