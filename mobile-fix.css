@@ -1,0 +1,163 @@
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.modal-card,
+.detail,
+.booking,
+.booking-step,
+.booking-form,
+.booking-dates,
+.cols,
+.field,
+.card,
+.card-body {
+  min-width: 0;
+}
+
+.field input,
+.field select,
+.field textarea,
+.booking-dates input {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 600px) {
+  .modal {
+    padding: 8px;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-height: calc(100dvh - 16px);
+    border-radius: 16px;
+  }
+
+  .detail {
+    padding: 20px 14px;
+  }
+
+  .detail h2 {
+    font-size: 28px;
+    line-height: 1.08;
+  }
+
+  .detail .card-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .detail .price,
+  .card .price {
+    white-space: normal;
+  }
+
+  .booking {
+    width: 100%;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  .booking-dates,
+  .booking-form .cols,
+  .search,
+  .grid,
+  .features,
+  .three-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .booking-dates {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .booking-dates .field,
+  .booking-dates input,
+  .booking-form .field,
+  .booking-form input,
+  .booking-form select,
+  .booking-form textarea {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .booking-dates input,
+  .booking-form input,
+  .booking-form select,
+  .booking-form textarea {
+    font-size: 16px;
+  }
+
+  .quote {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+
+  .booking-summary {
+    min-width: 0;
+  }
+
+  .booking-summary > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .card-top {
+    flex-wrap: wrap;
+  }
+
+  .card-top > div {
+    min-width: 0;
+  }
+
+  .card-actions {
+    flex-wrap: wrap;
+  }
+
+  .card-actions button {
+    min-width: 120px;
+  }
+
+  .hero h1 {
+    font-size: clamp(42px, 14vw, 52px);
+  }
+
+  .contact {
+    padding: 22px;
+  }
+
+  .gallery-thumbnails {
+    padding-inline: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .container {
+    width: calc(100% - 16px);
+  }
+
+  .detail {
+    padding-inline: 10px;
+  }
+
+  .booking {
+    padding: 10px;
+  }
+
+  .card-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .card-actions button {
+    width: 100%;
+  }
+}
